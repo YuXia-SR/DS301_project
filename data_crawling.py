@@ -12,9 +12,8 @@ import finnhub
 import json
 import pandas as pd
 import time, datetime
-from config import api_key
 
-finnhub_client = finnhub.Client(api_key=api_key)
+finnhub_client = finnhub.Client(api_key="c9dg38qad3id6u3ebjn0")
 
 company_name = "AAPL"
 start_dt = "2022-04-01"
