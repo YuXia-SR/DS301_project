@@ -19,6 +19,7 @@ company_name = "AAPL"
 start_dt = "2022-04-01"
 end_dt = "2022-04-16"
 resolution = "D"
+data_direct = './data/'
 
 #%%
 
@@ -49,7 +50,7 @@ def get_news_firm(company_lst, start_dt, end_dt):
     return news_df 
         
 news_firm = get_news_firm(fairplays, start_dt, end_dt)
-news_firm.to_excel("news_firm.xlsx")
+news_firm.to_excel(data_direct+"news_firm.xlsx")
         
 #%%
 '''
@@ -67,7 +68,7 @@ def get_news_mkt():
     return news_mkt
     
 news_mkt = get_news_mkt()
-news_mkt.to_excel("news_mkt.xlsx")
+news_mkt.to_excel(data_direct+"news_mkt.xlsx")
 
 #%%
 '''
@@ -123,5 +124,5 @@ def get_price_firm(company_lst, start_dt, end_dt, resolution):
 
 
 price_df = get_price_firm(fairplays, start_dt, end_dt, resolution)
-price_df.to_excel("price_df.xlsx")
+price_df.to_excel(data_direct+"price_df.xlsx")
 
