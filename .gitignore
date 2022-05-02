@@ -130,7 +130,6 @@ dmypy.json
 
 # Ignored files
 .DS_Store
-*.csv
 *.xlsx
 data/*
 reference/*
@@ -139,3 +138,4 @@ test_ppo/*
 *.ipynb
 results/*
 trained_models/*
+datasets/*
