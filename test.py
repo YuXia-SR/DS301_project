@@ -7,6 +7,8 @@ import datetime
 import argparse
 import json
 
+import pyfolio
+from pyfolio import timeseries
 import finrl.config as config
 from finrl.finrl_meta.preprocessor.yahoodownloader import YahooDownloader
 from finrl.finrl_meta.preprocessor.preprocessors import FeatureEngineer,data_split
@@ -19,35 +21,7 @@ from finrl.agents.stablebaselines3.models import DRLAgent
 from finrl.plot import backtest_stats, backtest_plot, get_daily_return, get_baseline,convert_daily_return_to_pyfolio_ts
 #import train_config
 
-import sys
-import os
-if not os.path.exists("./" + config.DATA_SAVE_DIR):
-    os.makedirs("./" + config.DATA_SAVE_DIR)
-if not os.path.exists("./" + config.TRAINED_MODEL_DIR):
-    os.makedirs("./" + config.TRAINED_MODEL_DIR)
-if not os.path.exists("./" + config.TENSORBOARD_LOG_DIR):
-    os.makedirs("./" + config.TENSORBOARD_LOG_DIR)
-if not os.path.exists("./" + config.RESULTS_DIR):
-    os.makedirs("./" + config.RESULTS_DIR)
-def get_train_data(train_config):
-    df = pd.read_csv(train_config.train_file)
-    df = df.set_index("Unnamed: 0")
-    # process data: add covariance matrix
-    df=df.sort_values(['date','tic'],ignore_index=True)
-    df.index = df.date.factorize()[0]
-    cov_list = []
-    lookback=252 # look back is one year
-    for i in range(lookback,len(df.index.unique())):
-        data_lookback = df.loc[i-lookback:i,:]
-        price_lookback=data_lookback.pivot_table(index = 'date',columns = 'tic', values = 'close')
-        return_lookback = price_lookback.pct_change().dropna()
-        covs = return_lookback.cov().values 
-        cov_list.append(covs)
-    df_cov = pd.DataFrame({'date':df.date.unique()[lookback:],'cov_list':cov_list})
-    df = df.merge(df_cov, on='date')
-    df = df.sort_values(['date','tic']).reset_index(drop=True)
-    return df
-def experiment(train_config):
+def test_model(train_config):
     add_nlp = train_config["ADD_NLP"]
     ticker_list = train_config["TICKER_LIST"]
     start = train_config["START_DATE"]
@@ -56,7 +30,8 @@ def experiment(train_config):
     model_name = train_config["MODEL_NAME"]
     indicators = train_config["INDICATORS"]
     model_direct = train_config["MODEL_DIRECT"]
-    data_direct = train_config["DATA_DIRECT"]
+    #data_direct = train_config["DATA_DIRECT"]
+
     # Download data
     df = YahooDownloader(start_date = start,
                         end_date = end,
@@ -83,12 +58,11 @@ def experiment(train_config):
     df = df.merge(df_cov, on='date')
     df = df.sort_values(['date','tic']).reset_index(drop=True)
     # split data
-    train = data_split(df, start, train_test)
+    trade = data_split(df, train_test, end)
 
     # prepare portfolioEnv
-    stock_dimension = len(train.tic.unique())
+    stock_dimension = len(trade.tic.unique())
     state_space = stock_dimension
-    #print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
     env_kwargs = {
         "hmax": train_config["HMAX"], 
         "initial_amount": train_config["INITIAL_AMOUNT"], 
@@ -100,36 +74,20 @@ def experiment(train_config):
         "reward_scaling": train_config["REWARD_SCALING"]
         
     }
-    e_train_gym = StockPortfolioEnv(df = train, **env_kwargs)
-    env_train, _ = e_train_gym.get_sb_env()
-
-    # initialize
-    agent = DRLAgent(env = env_train)
-    agent = DRLAgent(env = env_train)
-    SAC_PARAMS = train_config["PARAMS"]
-
-    model_sac = agent.get_model(model_name,model_kwargs = SAC_PARAMS)
-    trained_sac = agent.train_model(model=model_sac, 
-                                tb_log_name=model_name,
-                                total_timesteps=5000)
-    trained_sac.save(
-            f'{model_direct}/{model_name.upper()}_noNLP'
-        )
-    return trained_sac
-
-
-if __name__ == "__main__":
-    # Parse command line arguments.
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", dest="config",
-                        help="Absolute path to configuration file.")
-    args = parser.parse_args()
-
-    # Ensure a config was passed to the script.
-    if not args.config:
-        print("No configuration file provided.")
-        exit()
-    else:
-        with open(args.config, "r") as inp:
-            config = json.load(inp)
-    trained_model = experiment(config)
+    trained_model # TODO define ways to load trained_model
+    e_trade_gym = StockPortfolioEnv(df = trade, **env_kwargs)
+    df_daily_return, df_actions = DRLAgent.DRL_prediction(model=trained_model,
+                        environment = e_trade_gym)
+    DRL_strat = convert_daily_return_to_pyfolio_ts(df_daily_return)
+    perf_func = timeseries.perf_stats 
+    perf_stats_all = perf_func( returns=DRL_strat, 
+                                factor_returns=DRL_strat, 
+                                    positions=None, transactions=None, turnover_denom="AGB")
+    baseline_df = get_baseline(
+        ticker=train_config["BASE_TICK"], start=start, end=end
+    )
+    baseline_returns = get_daily_return(baseline_df, value_col_name="close")
+    
+    with pyfolio.plotting.plotting_context(font_scale=1.1):
+        pyfolio.create_full_tear_sheet(returns = DRL_strat,
+                                       benchmark_rets=baseline_returns, set_context=False)

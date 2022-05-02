@@ -137,3 +137,5 @@ reference/*
 FinRL-master/*
 test_ppo/*
 *.ipynb
+results/*
+trained_models/*

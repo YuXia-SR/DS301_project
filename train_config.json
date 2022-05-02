@@ -1,0 +1,37 @@
+
+{"api_key":"c9dhck2ad3id6u3ecin0",
+
+
+"TICKER_LIST":["MRNA", "JNJ", "PFE"],
+"START_DATE": "2018-12-07",
+"END_DATE":"2022-04-30",
+"TRAIN_TEST_SPLIT":"2021-04-30",
+"BASE_TICK":"^DJI",
+"INDICATORS": [
+    "macd",
+    "boll_ub",
+    "boll_lb",
+    "rsi_30",
+    "cci_30",
+    "dx_30",
+    "close_30_sma",
+    "close_60_sma"],
+
+
+"HMAX":100,
+"INITIAL_AMOUNT":1000000,
+"TRANSACTION_COST":0.001,
+"REWARD_SCALING":1e-4,
+
+
+"MODEL_NAME":"sac",
+"MODEL_DIRECT":"trained_models",
+
+
+"PARAMS":{
+    "batch_size": 1000,
+        "buffer_size": 10000,
+        "learning_rate": 0.0003,
+        "learning_starts": 100,
+        "ent_coef": "auto_0.1"}
+}

@@ -366,6 +366,8 @@ class StockTradingEnv(gym.Env):
             # For Initial State
             if len(self.df.tic.unique()) > 1:
                 # for multiple stock
+                print(type(self.data.close))
+                print(self.data.close)
                 state = (
                     [self.initial_amount]
                     + self.data.close.values.tolist()
