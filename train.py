@@ -67,10 +67,18 @@ def experiment(train_config):
                         use_turbulence=False,
                         user_defined_feature = False)
     df = fe.preprocess_data(df)
+    if if_nlp:
+        nlp = pd.read_csv(f'{data_direct}/{train_config["NLP_FILE"]}')
+        columns = ['date','tic']
+        columns.extend(train_config["NLP_INDICATORS"])
+        indicators.extend(train_config["NLP_INDICATORS"])
+        nlp = nlp[columns]
+        df = df.merge(nlp,on=["date","tic"],how='left')
+        df.fillna(0)
     # process data: add covariance matrix
     df=df.sort_values(['date','tic'],ignore_index=True)
     df.index = df.date.factorize()[0]
-    df.to_csv(f'datasets/{start}_{end}.csv',index=False)
+    df.to_csv(f'datasets/{start}_{end}_nlp{if_nlp}.csv',index=False)
     cov_list = []
     lookback=train_config["LOOKBACK"] # look back is one year
     for i in range(lookback,len(df.index.unique())):

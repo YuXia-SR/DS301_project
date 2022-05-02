@@ -2,6 +2,9 @@
 {"api_key":"c9dhck2ad3id6u3ecin0",
 
 "IF_NLP": false,
+"DATA_DIRECT":"dataset",
+"NLP_FILE":"nlp_score.csv",
+"PRICE_FILE":"2018-12-07_2022-04-30.csv",
 
 "TICKER_LIST":["MRNA", "JNJ", "PFE"],
 "START_DATE": "2018-12-07",
@@ -18,6 +21,7 @@
     "dx_30",
     "close_30_sma",
     "close_60_sma"],
+"NLP_INDICATORS":["weighted_sent_score"],
 
 
 "HMAX":100,

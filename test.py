@@ -22,7 +22,7 @@ from finrl.plot import backtest_stats, backtest_plot, get_daily_return, get_base
 #import train_config
 
 def test_model(train_config):
-    add_nlp = train_config["ADD_NLP"]
+    if_nlp = train_config["IF_NLP"]
     ticker_list = train_config["TICKER_LIST"]
     start = train_config["START_DATE"]
     end = train_config["END_DATE"]
@@ -30,7 +30,7 @@ def test_model(train_config):
     model_name = train_config["MODEL_NAME"]
     indicators = train_config["INDICATORS"]
     model_direct = train_config["MODEL_DIRECT"]
-    #data_direct = train_config["DATA_DIRECT"]
+    data_direct = train_config["DATA_DIRECT"]
 
     # Download data
     df = YahooDownloader(start_date = start,
@@ -42,6 +42,14 @@ def test_model(train_config):
                         use_turbulence=False,
                         user_defined_feature = False)
     df = fe.preprocess_data(df)
+    if if_nlp:
+        nlp = pd.read_csv(f'{data_direct}/{train_config["NLP_FILE"]}')
+        columns = ['date','tic']
+        columns.extend(train_config["NLP_INDICATORS"])
+        indicators.extend(train_config["NLP_INDICATORS"])
+        nlp = nlp[columns]
+        df = df.merge(nlp,on=["date","tic"],how='left')
+        df.fillna(0)
     # process data: add covariance matrix
     df=df.sort_values(['date','tic'],ignore_index=True)
     df.index = df.date.factorize()[0]
