@@ -48,7 +48,7 @@ def get_train_data(train_config):
     df = df.sort_values(['date','tic']).reset_index(drop=True)
     return df
 def experiment(train_config):
-    add_nlp = train_config["ADD_NLP"]
+    if_nlp = train_config["IF_NLP"]
     ticker_list = train_config["TICKER_LIST"]
     start = train_config["START_DATE"]
     end = train_config["END_DATE"]
@@ -72,7 +72,7 @@ def experiment(train_config):
     df.index = df.date.factorize()[0]
     df.to_csv(f'datasets/{start}_{end}.csv',index=False)
     cov_list = []
-    lookback=252 # look back is one year
+    lookback=train_config["LOOKBACK"] # look back is one year
     for i in range(lookback,len(df.index.unique())):
         data_lookback = df.loc[i-lookback:i,:]
         price_lookback=data_lookback.pivot_table(index = 'date',columns = 'tic', values = 'close')
