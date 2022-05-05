@@ -6,6 +6,7 @@ matplotlib.use('Agg')
 import datetime
 import argparse
 import json
+import pickle
 
 import finrl.config as config
 from finrl.finrl_meta.preprocessor.yahoodownloader import YahooDownloader
@@ -67,18 +68,10 @@ def experiment(train_config):
                         use_turbulence=False,
                         user_defined_feature = False)
     df = fe.preprocess_data(df)
-    if if_nlp:
-        nlp = pd.read_csv(f'{data_direct}/{train_config["NLP_FILE"]}')
-        columns = ['date','tic']
-        columns.extend(train_config["NLP_INDICATORS"])
-        indicators.extend(train_config["NLP_INDICATORS"])
-        nlp = nlp[columns]
-        df = df.merge(nlp,on=["date","tic"],how='left')
-        df.fillna(0)
     # process data: add covariance matrix
     df=df.sort_values(['date','tic'],ignore_index=True)
     df.index = df.date.factorize()[0]
-    df.to_csv(f'datasets/{start}_{end}_nlp{if_nlp}.csv',index=False)
+    df.to_csv(f'{data_direct}/{start}_{end}_nlp{if_nlp}.csv',index=False)
     cov_list = []
     lookback=train_config["LOOKBACK"] # look back is one year
     for i in range(lookback,len(df.index.unique())):
@@ -89,6 +82,14 @@ def experiment(train_config):
         cov_list.append(covs)
     df_cov = pd.DataFrame({'date':df.date.unique()[lookback:],'cov_list':cov_list})
     df = df.merge(df_cov, on='date')
+    if if_nlp:
+        nlp = pd.read_csv(f'{data_direct}/{train_config["NLP_FILE"]}')
+        columns = ['date','tic']
+        columns.extend(train_config["NLP_INDICATORS"])
+        indicators.extend(train_config["NLP_INDICATORS"])
+        nlp = nlp[columns]
+        df = df.merge(nlp,on=["date","tic"],how='left')
+        df.fillna(0,inplace=True)
     df = df.sort_values(['date','tic']).reset_index(drop=True)
     # split data
     train = data_split(df, start, train_test)
@@ -119,10 +120,13 @@ def experiment(train_config):
     model_sac = agent.get_model(model_name,model_kwargs = SAC_PARAMS)
     trained_sac = agent.train_model(model=model_sac, 
                                 tb_log_name=model_name,
-                                total_timesteps=5000)
-    trained_sac.save(
-            f'{model_direct}/{model_name.upper()}_noNLP'
-        )
+                                total_timesteps=train_config["T"])
+    #trained_sac.save(
+    #        f'{model_direct}/{model_name.upper()}_nlp{if_nlp}' # TODO how to save model in a better way
+    #    )
+    # create an iterator object with write permission - model.pkl
+    #with open(f'{model_direct}/{model_name.upper()}_nlp{if_nlp}.pkl', 'wb') as files:
+    #    pickle.dump(trained_sac, files)
     return trained_sac
 
 
@@ -141,3 +145,5 @@ if __name__ == "__main__":
         with open(args.config, "r") as inp:
             config = json.load(inp)
     trained_model = experiment(config)
+    with open(f'{config["MODEL_DIRECT"]}/{config["MODEL_NAME"].upper()}_nlp{config["IF_NLP"]}.pkl', 'wb') as files:
+        pickle.dump(trained_model, files)
