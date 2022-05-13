@@ -7,6 +7,7 @@ import datetime
 import argparse
 import json
 import pickle
+import torch
 
 import finrl.config as config
 from finrl.finrl_meta.preprocessor.yahoodownloader import YahooDownloader
@@ -62,6 +63,8 @@ def experiment(train_config):
     df = YahooDownloader(start_date = start,
                         end_date = end,
                         ticker_list = ticker_list).fetch_data()
+    df = pd.read_csv(data_direct+train_config["PRICE_FILE"])
+    df = df.sort_values(['date','tic']).reset_index(drop=True)
     # process data: add tech_indicators
     fe = FeatureEngineer(
                         use_technical_indicator=True,
@@ -92,7 +95,9 @@ def experiment(train_config):
         df.fillna(0,inplace=True)
     df = df.sort_values(['date','tic']).reset_index(drop=True)
     # split data
-    train = data_split(df, start, train_test)
+    pd.to_datetime("2022-12-07")
+    train = data_split(df, pd.to_datetime(start), pd.to_datetime(train_test))
+    trade = data_split(df, pd.to_datetime(train_test), pd.to_datetime(end))
 
     # prepare portfolioEnv
     stock_dimension = len(train.tic.unique())
@@ -112,6 +117,9 @@ def experiment(train_config):
     e_train_gym = StockPortfolioEnv(df = train, **env_kwargs)
     env_train, _ = e_train_gym.get_sb_env()
 
+    #trade = data_split(df,'2019-01-01', '2020-01-01')
+    e_trade_gym = StockPortfolioEnv(df = trade, **env_kwargs)
+
     # initialize
     agent = DRLAgent(env = env_train)
     agent = DRLAgent(env = env_train)
@@ -121,8 +129,15 @@ def experiment(train_config):
     trained_sac = agent.train_model(model=model_sac, 
                                 tb_log_name=model_name,
                                 total_timesteps=train_config["T"])
-    #trained_sac.save(
-    #        f'{model_direct}/{model_name.upper()}_nlp{if_nlp}' # TODO how to save model in a better way
+    df_daily_return, df_actions = DRLAgent.DRL_prediction(model=trained_sac,
+                        environment = e_trade_gym)
+    df_daily_return.to_csv(f'{train_config["RESULT_DIRECT"]}/daily_return.csv')
+    df_actions.to_csv(f'{train_config["RESULT_DIRECT"]}/daily_action.csv')
+    torch.save(trained_sac,
+            f'{model_direct}/{model_name.upper()}_nlp{if_nlp}.pt' # TODO how to save model in a better way
+        )
+    #torch.save(trained_sac,
+    #        f'{model_name.upper()}_nlp{if_nlp}.pt' # TODO how to save model in a better way
     #    )
     # create an iterator object with write permission - model.pkl
     #with open(f'{model_direct}/{model_name.upper()}_nlp{if_nlp}.pkl', 'wb') as files:
@@ -145,5 +160,5 @@ if __name__ == "__main__":
         with open(args.config, "r") as inp:
             config = json.load(inp)
     trained_model = experiment(config)
-    with open(f'{config["MODEL_DIRECT"]}/{config["MODEL_NAME"].upper()}_nlp{config["IF_NLP"]}.pkl', 'wb') as files:
-        pickle.dump(trained_model, files)
+    #with open(f'{config["MODEL_DIRECT"]}/{config["MODEL_NAME"].upper()}_nlp{config["IF_NLP"]}1.pkl', 'wb') as files:
+    #    pickle.dump(trained_model, files)

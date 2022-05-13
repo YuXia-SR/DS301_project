@@ -3,10 +3,11 @@
 
 "IF_NLP": false,
 "DATA_DIRECT":"dataset",
-"NLP_FILE":"nlp_score.csv",
-"PRICE_FILE":"2018-12-07_2022-04-30.csv",
+"NLP_FILE":"nlp.csv",
+"RESULT_DIRECT":"results",
+"PRICE_FILE":"stock.xlsx",
 
-"TICKER_LIST":["MRNA", "JNJ", "PFE"],
+"TICKER_LIST":["MRNA", "JNJ", "PFE","^TNX"],
 "START_DATE": "2018-12-07",
 "END_DATE":"2022-04-30",
 "TRAIN_TEST_SPLIT":"2021-04-30",
@@ -21,7 +22,7 @@
     "dx_30",
     "close_30_sma",
     "close_60_sma"],
-"NLP_INDICATORS":["weighted_sent_score"],
+"NLP_INDICATORS":["weighted_afinn", "weighted_positive","weighted_negative","weighted_neutral"],
 
 
 "HMAX":100,
@@ -30,14 +31,13 @@
 "REWARD_SCALING":1e-4,
 
 
-"MODEL_NAME":"sac",
+"MODEL_NAME":"ddpg",
 "MODEL_DIRECT":"trained_models",
 
-"T":500,
+"T":5000,
 "PARAMS":{
-    "batch_size": 500,
-        "buffer_size": 10000,
+    "batch_size": 128,
+        "buffer_size": 100000,
         "learning_rate": 0.0003,
-        "learning_starts": 100,
-        "ent_coef": "auto_0.1"}
+        "learning_starts": 100}
 }

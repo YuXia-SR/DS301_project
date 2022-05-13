@@ -135,7 +135,10 @@ data/*
 reference/*
 FinRL-master/*
 test_ppo/*
-*.ipynb
+*#.ipynb
 results/*
 trained_models/*
 datasets/*
+dataset/*
+nlp/*
+*.zip
